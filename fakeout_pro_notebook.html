@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Syndicate Capital — Fakeout Pro · Dev Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── TOKENS ─────────────────────────────────────── */
+  :root {
+    --bg:        #080C10;
+    --bg2:       #0D1219;
+    --bg3:       #111827;
+    --panel:     #141C26;
+    --border:    #1E2D3D;
+    --border2:   #243447;
+    --text:      #C9D6E3;
+    --text-dim:  #5A7491;
+    --text-mute: #2E4460;
+    --accent:    #00E5FF;
+    --accent2:   #FFD60A;
+    --green:     #00E676;
+    --red:       #FF3D3D;
+    --orange:    #FF9800;
+    --purple:    #C084FC;
+    --mono:      'Space Mono', monospace;
+    --display:   'Syne', sans-serif;
+    --body:      'DM Sans', sans-serif;
+    --radius:    6px;
+    --sidebar-w: 260px;
+  }
+
+  /* ── RESET ──────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.7;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SIDEBAR ─────────────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .brand {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .brand-name {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .brand-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-top: 10px;
+  }
+  .version-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .nav-section {
+    padding: 16px 12px 4px;
+  }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    margin-bottom: 1px;
+  }
+  .nav-item:hover {
+    background: var(--panel);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .nav-item.active {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  .nav-icon { font-size: 13px; width: 16px; text-align: center; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-mute);
+    line-height: 1.8;
+  }
+
+  /* ── MAIN ────────────────────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 0;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+  .breadcrumb {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .breadcrumb span { color: var(--text-mute); }
+  .topbar-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-mute);
+    display: flex;
+    gap: 20px;
+  }
+  .topbar-meta b { color: var(--text-dim); }
+
+  /* ── CONTENT AREA ────────────────────────────────── */
+  .content {
+    padding: 48px 40px 80px;
+    max-width: 960px;
+  }
+
+  /* ── SECTION ─────────────────────────────────────── */
+  .section {
+    display: none;
+  }
+  .section.active {
+    display: block;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── TYPOGRAPHY ──────────────────────────────────── */
+  .page-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .page-title {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .page-subtitle {
+    font-size: 15px;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin-bottom: 40px;
+    line-height: 1.7;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin: 40px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 24px 0 10px;
+  }
+  p { color: var(--text); margin-bottom: 14px; }
+  strong { color: #fff; font-weight: 500; }
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--accent2);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  /* ── CARDS ───────────────────────────────────────── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.red::after   { background: var(--red); }
+  .stat-card.orange::after { background: var(--orange); }
+  .stat-card.purple::after { background: var(--purple); }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .stat-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  /* ── CHANGELOG ───────────────────────────────────── */
+  .changelog-entry {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 32px;
+  }
+  .changelog-entry::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 0; bottom: -32px;
+    width: 1px;
+    background: var(--border);
+  }
+  .changelog-entry:last-child::before { display: none; }
+  .changelog-dot {
+    position: absolute;
+    left: 0; top: 4px;
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .changelog-dot.latest { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, var(--bg2)); }
+  .changelog-dot.fix    { border-color: var(--orange); }
+  .changelog-dot.major  { border-color: var(--green); }
+  .changelog-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .changelog-version {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .changelog-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+  .badge-new   { color: var(--accent);  border-color: color-mix(in srgb, var(--accent) 30%, transparent);  background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .badge-fix   { color: var(--orange);  border-color: color-mix(in srgb, var(--orange) 30%, transparent);  background: color-mix(in srgb, var(--orange) 8%, transparent); }
+  .badge-major { color: var(--green);   border-color: color-mix(in srgb, var(--green) 30%, transparent);   background: color-mix(in srgb, var(--green) 8%, transparent); }
+  .badge-break { color: var(--red);     border-color: color-mix(in srgb, var(--red) 30%, transparent);     background: color-mix(in srgb, var(--red) 8%, transparent); }
+  .badge-wip   { color: var(--purple);  border-color: color-mix(in srgb, var(--purple) 30%, transparent);  background: color-mix(in srgb, var(--purple) 8%, transparent); }
+
+  .change-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .change-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .change-list li .tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    min-width: 48px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    text-align: center;
+    margin-top: 1px;
+  }
+  .tag-fix   { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange); }
+  .tag-feat  { background: color-mix(in srgb, var(--green)  15%, transparent); color: var(--green);  }
+  .tag-logic { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+  .tag-viz   { background: color-mix(in srgb, var(--purple) 15%, transparent); color: var(--purple); }
+  .tag-perf  { background: color-mix(in srgb, var(--accent2)15%, transparent); color: var(--accent2);}
+  .tag-doc   { background: color-mix(in srgb, var(--text-dim)15%,transparent); color: var(--text-dim);}
+
+  /* ── KNOWN ISSUES ────────────────────────────────── */
+  .issue-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 10px;
+    background: var(--bg2);
+    display: flex;
+    gap: 14px;
+  }
+  .issue-status {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    border-radius: 3px;
+    height: fit-content;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .st-open     { background: color-mix(in srgb, var(--red) 15%, transparent);    color: var(--red);    border: 1px solid color-mix(in srgb, var(--red)    25%, transparent); }
+  .st-progress { background: color-mix(in srgb, var(--orange) 15%, transparent); color: var(--orange); border: 1px solid color-mix(in srgb, var(--orange) 25%, transparent); }
+  .st-resolved { background: color-mix(in srgb, var(--green) 15%, transparent);  color: var(--green);  border: 1px solid color-mix(in srgb, var(--green)  25%, transparent); }
+  .st-wont     { background: color-mix(in srgb, var(--text-dim)15%,transparent); color: var(--text-dim); border:1px solid var(--border); }
+  .issue-body { flex: 1; }
+  .issue-title { font-weight: 500; color: #fff; font-size: 13px; margin-bottom: 4px; }
+  .issue-desc  { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  .issue-meta  { font-family: var(--mono); font-size: 10px; color: var(--text-mute); margin-top: 8px; }
+
+  /* ── PARAMS TABLE ────────────────────────────────── */
+  .params-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .params-table thead tr {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+  }
+  .params-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 400;
+  }
+  .params-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .params-table tr:hover td { background: var(--panel); }
+  .params-table .param-name { font-family: var(--mono); font-size: 12px; color: var(--accent2); }
+  .params-table .param-default { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .params-table .param-desc { color: var(--text-dim); font-size: 12px; }
+
+  /* ── ROADMAP ─────────────────────────────────────── */
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .roadmap-col h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+  }
+  .col-now h3  { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+  .col-next h3 { background: color-mix(in srgb, var(--orange) 10%, transparent); color: var(--orange); }
+  .col-later h3{ background: color-mix(in srgb, var(--purple) 10%, transparent); color: var(--purple); }
+
+  .roadmap-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: default;
+    transition: border-color 0.15s;
+  }
+  .roadmap-item:hover { border-color: var(--border2); }
+  .roadmap-item .ri-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── INFO BLOCKS ─────────────────────────────────── */
+  .callout {
+    border-left: 3px solid;
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .callout.info    { border-color: var(--accent);  background: color-mix(in srgb, var(--accent) 6%, transparent);  color: var(--text); }
+  .callout.warn    { border-color: var(--orange);  background: color-mix(in srgb, var(--orange) 6%, transparent);  color: var(--text); }
+  .callout.success { border-color: var(--green);   background: color-mix(in srgb, var(--green)  6%, transparent);  color: var(--text); }
+  .callout.danger  { border-color: var(--red);     background: color-mix(in srgb, var(--red)    6%, transparent);  color: var(--text); }
+  .callout strong  { color: #fff; }
+
+  /* ── GOAL PROGRESS ───────────────────────────────── */
+  .goal-item {
+    margin-bottom: 16px;
+  }
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .goal-name { font-size: 13px; color: var(--text); }
+  .goal-pct  { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .goal-bar  {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .goal-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.8s cubic-bezier(.16,1,.3,1);
+  }
+  .goal-fill.g  { background: var(--green); }
+  .goal-fill.o  { background: var(--orange); }
+  .goal-fill.p  { background: var(--purple); }
+
+  /* ── TESTING LOG ─────────────────────────────────── */
+  .test-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto 120px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .test-row:first-child { border-top: 1px solid var(--border); }
+  .test-row .t-name { color: var(--text); font-weight: 500; }
+  .test-row .t-tf   { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+  .test-row .t-date { font-family: var(--mono); font-size: 10px; color: var(--text-mute); }
+  .result-pass { color: var(--green); font-family: var(--mono); font-size: 11px; }
+  .result-fail { color: var(--red);   font-family: var(--mono); font-size: 11px; }
+  .result-part { color: var(--orange);font-family: var(--mono); font-size: 11px; }
+
+  /* ── DEFINITION LIST ─────────────────────────────── */
+  .def-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .def-row  {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .def-term { font-family: var(--mono); font-size: 11px; color: var(--accent2); font-weight: 700; }
+  .def-desc { color: var(--text-dim); }
+
+  /* ── DIVIDER ─────────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── SCROLLBAR ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-tag">Syndicate Capital</div>
+    <div class="brand-name">Fakeout Pro</div>
+    <div class="brand-sub">Development Notebook</div>
+    <div class="version-badge">v5.0 · Pine Script v6</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Overview</div>
+    <a class="nav-item active" onclick="show('overview', this)">
+      <span class="nav-icon">⬡</span> Project Overview
+    </a>
+    <a class="nav-item" onclick="show('goals', this)">
+      <span class="nav-icon">◎</span> Goals & Vision
+    </a>
+    <a class="nav-item" onclick="show('architecture', this)">
+      <span class="nav-icon">⬚</span> Architecture
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Reference</div>
+    <a class="nav-item" onclick="show('parameters', this)">
+      <span class="nav-icon">⊟</span> Parameters
+    </a>
+    <a class="nav-item" onclick="show('logic', this)">
+      <span class="nav-icon">⊕</span> Signal Logic
+    </a>
+    <a class="nav-item" onclick="show('glossary', this)">
+      <span class="nav-icon">≡</span> Glossary
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Development</div>
+    <a class="nav-item" onclick="show('changelog', this)">
+      <span class="nav-icon">◷</span> Changelog
+    </a>
+    <a class="nav-item" onclick="show('issues', this)">
+      <span class="nav-icon">⊗</span> Known Issues
+    </a>
+    <a class="nav-item" onclick="show('testing', this)">
+      <span class="nav-icon">✓</span> Test Log
+    </a>
+    <a class="nav-item" onclick="show('roadmap', this)">
+      <span class="nav-icon">→</span> Roadmap
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Operations</div>
+    <a class="nav-item" onclick="show('usage', this)">
+      <span class="nav-icon">▷</span> Usage Guide
+    </a>
+    <a class="nav-item" onclick="show('decisions', this)">
+      <span class="nav-icon">◈</span> Design Decisions
+    </a>
+    <a class="nav-item" onclick="show('notes', this)">
+      <span class="nav-icon">✎</span> Dev Notes
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    PINE SCRIPT v6<br>
+    TRADINGVIEW OVERLAY<br>
+    INTERNAL — NOT FOR DISTRIBUTION
+  </div>
+</nav>
+
+<!-- ── MAIN ────────────────────────────────────────────── -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">
+      Syndicate Capital <span>/</span> Fakeout Pro <span>/</span> <span id="crumb" style="color:var(--text)">Project Overview</span>
+    </div>
+    <div class="topbar-meta">
+      <span><b>Updated</b> May 2026</span>
+      <span><b>Build</b> v5.0-stable</span>
+      <span><b>Language</b> Pine Script v6</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- OVERVIEW -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-overview" class="section active">
+      <div class="page-eyebrow">Project Overview</div>
+      <div class="page-title">Fakeout Pro</div>
+      <div class="page-subtitle">A professional-grade TradingView indicator for detecting liquidity sweep fakeout setups across multiple timeframes, with smart HTF bias management and clean trade visualisation.</div>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Current Version</div>
+          <div class="stat-value">5.0</div>
+          <div class="stat-sub">Pine Script v6 · Stable</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Total Versions</div>
+          <div class="stat-value">5</div>
+          <div class="stat-sub">v1 → v5 · Active dev</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Open Issues</div>
+          <div class="stat-value">3</div>
+          <div class="stat-sub">2 in progress</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Parameters</div>
+          <div class="stat-value">24</div>
+          <div class="stat-sub">Across 5 groups</div>
+        </div>
+      </div>
+
+      <h2>What This Indicator Does</h2>
+      <p>Fakeout Pro detects high-probability reversal setups based on the concept of <strong>liquidity sweeps</strong> — moments when price temporarily breaks a key structural level (sweeping stop orders), then closes back inside, signalling that institutional money has absorbed the liquidity and is ready to move in the opposite direction.</p>
+
+      <div class="callout info">
+        <strong>Core concept:</strong> A fakeout is not just a wick — it is a wick that sweeps a structurally significant level (prior swing high/low, 4H high/low, daily high/low) and closes back inside within 1–3 bars. The close-back is the confirmation.
+      </div>
+
+      <h2>Indicator Layers</h2>
+      <div class="def-list">
+        <div class="def-row">
+          <div class="def-term">HTF Bias Engine</div>
+          <div class="def-desc">Reads Daily and 4H candle structure to establish directional bias. Daily > 4H in priority. Bias determines which side of signals are valid.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Sweep Override</div>
+          <div class="def-desc">When price wicks through and closes back inside a Daily or 4H level, the bias flips automatically. This is the key intelligence layer — it prevents signals firing in the wrong direction after a major liquidity grab.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Fakeout Detector</div>
+          <div class="def-desc">Identifies the wick candle (sweep bar) and confirmation candle. Checks body ratio, directional close, and overextension before firing a signal.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Liquidity Lines</div>
+          <div class="def-desc">Persistent dotted lines showing Daily/4H/1H previous highs, lows, and closes. Colour-coded by bias direction: orange = sell-side, cyan = buy-side, purple = daily close.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Trade Visualiser</div>
+          <div class="def-desc">Draws entry, SL, TP1, TP2, TP3 levels as coloured horizontal lines with shaded zones and live R:R labels when a signal fires.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Checklist Table</div>
+          <div class="def-desc">Bottom-right table evaluating 3 conditions in real-time: Liq Sweep ✅, Close Back ✅, Clear Target ✅. Grades the setup: HIGH PROB / MODERATE / LOW PROB.</div>
+        </div>
+      </div>
+
+      <h2>Recommended Use</h2>
+      <p>Apply the indicator on <strong>5m or 15m charts</strong>. The bias engine reads higher timeframes automatically — you do not need to switch charts. Use the <code>Bias Table</code> (top-right) as a constant reference for which direction signals are valid. Only trade signals where all 3 checklist items pass.</p>
+
+      <div class="callout warn">
+        <strong>Important:</strong> This indicator does not provide financial advice. All signals require manual confirmation and risk management. Never enter a trade solely because the indicator fires.
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GOALS -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-goals" class="section">
+      <div class="page-eyebrow">Goals & Vision</div>
+      <div class="page-title">What We're Building</div>
+      <div class="page-subtitle">The principles, targets, and success criteria guiding every version of Fakeout Pro.</div>
+
+      <h2>Primary Goals</h2>
+
+      <div class="goal-item">
+        <div class="goal-header">
+          <span class="goal-name">Bias accuracy — signals match actual HTF direction</span>
+          <span class="goal-pct">75%</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill" style="width:75%"></div></div>
+      </div>
+      <div class="goal-item">
+        <div class="goal-header">
+          <span class="goal-name">Sweep override — bias flips correctly after major liq grabs</span>
+          <span class="goal-pct">60%</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill o" style="width:60%"></div></div>
+      </div>
+      <div class="goal-item">
+        <div class="goal-header">
+          <span class="goal-name">Trade visualisation — clean, non-confusing signal display</span>
+          <span class="goal-pct">80%</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill g" style="width:80%"></div></div>
+      </div>
+      <div class="goal-item">
+        <div class="goal-header">
+          <span class="goal-name">False signal reduction — fewer wrong signals in chop</span>
+          <span class="goal-pct">55%</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill p" style="width:55%"></div></div>
+      </div>
+      <div class="goal-item">
+        <div class="goal-header">
+          <span class="goal-name">Liquidity line clarity — all key levels clearly visible</span>
+          <span class="goal-pct">85%</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill g" style="width:85%"></div></div>
+      </div>
+
+      <h2>Design Philosophy</h2>
+      <div class="card">
+        <h3>1. Bias-first architecture</h3>
+        <p>Every signal is gated behind the bias engine. An otherwise perfect fakeout pattern that fires against the HTF structure is suppressed. The bias layer is the most important logic in the indicator — signals are secondary.</p>
+
+        <h3>2. Sweep = context, not just pattern</h3>
+        <p>A wick through a level is meaningless without context. The indicator requires: (a) the level is a real structural reference (prior swing, HTF high/low), (b) the candle has a small body (wick-dominant), and (c) the follow-up candle confirms the rejection. Pattern alone is not enough.</p>
+
+        <h3>3. Liquidity sweeps change the game</h3>
+        <p>After a major Daily or 4H low is swept, the bias must flip. The market has grabbed the sell-side liquidity — it no longer has a reason to go lower in the immediate term. Continuing to show SELL signals after a Daily Low sweep was the core bug addressed in v5.</p>
+
+        <h3>4. Clean, actionable visualisation</h3>
+        <p>A trader should see the signal and immediately know: where to enter, where the SL goes, and what the target is. The old arrow + box approach provided none of that. The new entry/SL/TP visualisation makes the trade fully legible at a glance.</p>
+      </div>
+
+      <h2>Success Criteria</h2>
+      <div class="def-list">
+        <div class="def-row">
+          <div class="def-term">Signal Quality</div>
+          <div class="def-desc">Less than 20% of fired signals should be clearly wrong in hindsight (wrong direction, no follow-through). Target: 70%+ hit TP1 when all 3 checklist items pass.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Bias Flip Speed</div>
+          <div class="def-desc">Bias should flip on the same bar that the sweep closes. No lag. No waiting for the next HTF candle (except for reset).</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">Usability</div>
+          <div class="def-desc">Any trader who understands liquidity sweeps should be able to use this indicator with zero configuration. Default settings should work on gold, indices, and forex 5m–15m charts.</div>
+        </div>
+        <div class="def-row">
+          <div class="def-term">No Repaint</div>
+          <div class="def-desc">All signals must be based on confirmed, closed bars only. The use of <code>barmerge.lookahead_off</code> and <code>[1]</code> offsets on HTF data ensures this.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ARCHITECTURE -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-architecture" class="section">
+      <div class="page-eyebrow">Architecture</div>
+      <div class="page-title">System Design</div>
+      <div class="page-subtitle">How the indicator's logic layers connect and execute.</div>
+
+      <h2>Execution Flow</h2>
+      <div class="card" style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--text-dim)">
+        <div style="color:var(--accent)">LAYER 1 — HTF DATA FETCH</div>
+        <div>  request.security() × 5 → Daily, 4H, 1H prev bar OHLC</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--accent)">LAYER 2 — BASE BIAS</div>
+        <div>  Daily close position in range → d_bull / d_bear</div>
+        <div>  4H close vs open → h4_bull / h4_bear</div>
+        <div>  Strict mode: requires both | Relaxed: daily only</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--orange)">LAYER 3 — SWEEP OVERRIDE ENGINE ← KEY LAYER</div>
+        <div>  Per-TF sweep state (daily_sweep, h4_sweep, h1_sweep)</div>
+        <div>  Resets on new candle of respective TF</div>
+        <div>  Priority: Daily > 4H > 1H > base bias</div>
+        <div>  Sweep of low → bias_bull=true | Sweep of high → bias_bear=true</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--accent)">LAYER 4 — ATR + OVEREXTENSION</div>
+        <div>  atr(14) → overext_up, overext_dn</div>
+        <div>  Prior move must exceed overext_atr × ATR to qualify</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--accent)">LAYER 5 — SWING STRUCTURE</div>
+        <div>  sw_high = highest(high, swing_len)[str_start]</div>
+        <div>  sw_low  = lowest(low, swing_len)[str_start]</div>
+        <div>  sw_doji = body/range ≤ doji_pct</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--green)">LAYER 6 — SIGNAL CONDITIONS</div>
+        <div>  sell_signal = bear_swept AND sw_doji AND bear_close_back AND bear_dir AND bias_bear AND overext_up</div>
+        <div>  buy_signal  = bull_swept AND sw_doji AND bull_close_back AND bull_dir AND bias_bull AND overext_dn</div>
+        <div style="color:var(--text-mute)">  ↓</div>
+        <div style="color:var(--purple)">LAYER 7 — VISUALISATION</div>
+        <div>  f_draw_trade() → entry + SL + TP1/2/3 lines + zones</div>
+        <div>  Liquidity lines → persistent, bias-coloured dotted lines</div>
+        <div>  Tables → checklist (bottom-right) + bias (top-right)</div>
+      </div>
+
+      <h2>HTF Data Strategy</h2>
+      <div class="callout info">
+        All HTF data uses <code>lookahead_off</code> to prevent future-bar leakage. The <code>[1]</code> offset ensures only the <strong>previously closed</strong> HTF bar is used for bias — never the currently forming candle.
+      </div>
+
+      <h2>Key Variables</h2>
+      <div class="def-list">
+        <div class="def-row"><div class="def-term">sweep_bar</div><div class="def-desc">= confirm_bars. The offset to the actual sweep candle (the one with the long wick).</div></div>
+        <div class="def-row"><div class="def-term">str_start</div><div class="def-desc">= confirm_bars + 1. The start of the lookback window for swing high/low calculation. Excludes the sweep candle itself.</div></div>
+        <div class="def-row"><div class="def-term">daily_sweep</div><div class="def-desc">Persistent int: 0 = none, 1 = high swept (bear flip), -1 = low swept (bull flip). Resets on new daily bar.</div></div>
+        <div class="def-row"><div class="def-term">h4_sweep</div><div class="def-desc">Same as daily_sweep but for 4H timeframe. Resets on new 4H candle.</div></div>
+        <div class="def-row"><div class="def-term">is_overridden</div><div class="def-desc">Boolean. True when any sweep state is active. Displayed in bias table as "OVR".</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- PARAMETERS -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-parameters" class="section">
+      <div class="page-eyebrow">Parameters</div>
+      <div class="page-title">Input Reference</div>
+      <div class="page-subtitle">All configurable settings, defaults, valid ranges, and guidance.</div>
+
+      <h2>HTF Bias</h2>
+      <table class="params-table">
+        <thead><tr><th>Parameter</th><th>Default</th><th>Range</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">bias_strict</td><td class="param-default">false</td><td>bool</td><td class="param-desc">When true, Daily AND 4H must agree for a bias to be set. When false, Daily alone determines bias. Stricter = fewer signals but higher quality.</td></tr>
+          <tr><td class="param-name">override_daily</td><td class="param-default">true</td><td>bool</td><td class="param-desc">Enable bias flip on Daily high/low sweeps. Highly recommended to keep on.</td></tr>
+          <tr><td class="param-name">override_4h</td><td class="param-default">true</td><td>bool</td><td class="param-desc">Enable bias flip on 4H high/low sweeps. Critical for catching intraday reversals off 4H levels.</td></tr>
+          <tr><td class="param-name">override_1h</td><td class="param-default">false</td><td>bool</td><td class="param-desc">Enable bias flip on 1H sweeps. More sensitive — may cause too many flips on lower TF charts.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Sweep Detection</h2>
+      <table class="params-table">
+        <thead><tr><th>Parameter</th><th>Default</th><th>Range</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">swing_len</td><td class="param-default">8</td><td>3–50</td><td class="param-desc">Bars to look back when identifying the swing high/low that gets swept. Higher = more significant level required. Recommended: 6–12 for 5m/15m.</td></tr>
+          <tr><td class="param-name">doji_pct</td><td class="param-default">0.40</td><td>0.05–0.80</td><td class="param-desc">Max body-to-range ratio of the sweep candle. 0.40 = body must be ≤40% of the full candle range. Lower = stricter, requires more wick-dominant candles.</td></tr>
+          <tr><td class="param-name">confirm_bars</td><td class="param-default">1</td><td>1–3</td><td class="param-desc">How many bars after the sweep candle to look for the close-back confirmation. 1 = next candle must confirm. Higher = more time but more risk of late entry.</td></tr>
+          <tr><td class="param-name">overext_bars</td><td class="param-default">8</td><td>3–30</td><td class="param-desc">Lookback for measuring prior directional move before the sweep. Must be a significant move to qualify.</td></tr>
+          <tr><td class="param-name">overext_atr</td><td class="param-default">1.2</td><td>0.3–5.0</td><td class="param-desc">Minimum size of the prior move in ATR multiples. 1.2 = the move before the sweep must be at least 1.2× ATR. Increase to filter choppy markets.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Risk / TP Settings</h2>
+      <table class="params-table">
+        <thead><tr><th>Parameter</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">sl_atr_mult</td><td class="param-default">1.0</td><td class="param-desc">SL distance beyond the sweep wick extreme, in ATR units.</td></tr>
+          <tr><td class="param-name">tp1_atr_mult</td><td class="param-default">2.0</td><td class="param-desc">TP1 distance from entry as a multiple of the SL distance (effectively sets R:R ratio).</td></tr>
+          <tr><td class="param-name">tp2_atr_mult</td><td class="param-default">4.0</td><td class="param-desc">TP2 distance from entry.</td></tr>
+          <tr><td class="param-name">tp3_atr_mult</td><td class="param-default">7.0</td><td class="param-desc">TP3 distance from entry. Only shown when "TP1 + TP2 + TP3" mode selected.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- SIGNAL LOGIC -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-logic" class="section">
+      <div class="page-eyebrow">Signal Logic</div>
+      <div class="page-title">How Signals Fire</div>
+      <div class="page-subtitle">Exact conditions required for a buy or sell fakeout signal to trigger.</div>
+
+      <h2>BUY Signal — All Conditions Required</h2>
+      <div class="change-list">
+        <li><span class="tag tag-logic">SWING</span> <span>Sweep candle's LOW went BELOW the prior swing low (highest(high, swing_len)[str_start]). The wick broke structure downward.</span></li>
+        <li><span class="tag tag-logic">DOJI</span> <span>Sweep candle body ÷ range ≤ <code>doji_pct</code>. Candle is wick-dominated — small body = rejection, not trend.</span></li>
+        <li><span class="tag tag-logic">CLOSE</span> <span>Confirmation candle closes ABOVE the swept swing low — price returned inside the range.</span></li>
+        <li><span class="tag tag-logic">DIR</span> <span>Confirmation candle is bullish: close &gt; open.</span></li>
+        <li><span class="tag tag-logic">BIAS</span> <span>bias_bull = true. Either daily closed bullish, or a Daily/4H low was recently swept (override active).</span></li>
+        <li><span class="tag tag-logic">EXT</span> <span>Prior move was a drop of at least <code>overext_atr × ATR</code> — confirms price was extended before the reversal.</span></li>
+      </div>
+
+      <h2>SELL Signal — All Conditions Required</h2>
+      <div class="change-list">
+        <li><span class="tag tag-logic">SWING</span> <span>Sweep candle's HIGH went ABOVE the prior swing high. Wick broke structure upward.</span></li>
+        <li><span class="tag tag-logic">DOJI</span> <span>Sweep candle body ÷ range ≤ <code>doji_pct</code>.</span></li>
+        <li><span class="tag tag-logic">CLOSE</span> <span>Confirmation candle closes BELOW the swept swing high.</span></li>
+        <li><span class="tag tag-logic">DIR</span> <span>Confirmation candle is bearish: close &lt; open.</span></li>
+        <li><span class="tag tag-logic">BIAS</span> <span>bias_bear = true.</span></li>
+        <li><span class="tag tag-logic">EXT</span> <span>Prior move was a rally of at least <code>overext_atr × ATR</code>.</span></li>
+      </div>
+
+      <h2>Sweep Override Logic</h2>
+      <div class="callout success">
+        <strong>New in v5:</strong> When ANY of the following occurs on the current bar, bias flips immediately — overriding the base Daily bias.
+      </div>
+      <div class="change-list">
+        <li><span class="tag tag-feat">DAILY</span> <span><strong>Daily Low Sweep:</strong> <code>low &lt; d_l AND close &gt; d_l</code> → bias flips BULL. Resets on next daily open.</span></li>
+        <li><span class="tag tag-feat">DAILY</span> <span><strong>Daily High Sweep:</strong> <code>high &gt; d_h AND close &lt; d_h</code> → bias flips BEAR. Resets on next daily open.</span></li>
+        <li><span class="tag tag-feat">4H</span> <span><strong>4H Low Sweep:</strong> <code>low &lt; h4_l AND close &gt; h4_l</code> → bias flips BULL. Resets on next 4H open.</span></li>
+        <li><span class="tag tag-feat">4H</span> <span><strong>4H High Sweep:</strong> <code>high &gt; h4_h AND close &lt; h4_h</code> → bias flips BEAR. Resets on next 4H open.</span></li>
+      </div>
+
+      <h2>Checklist Evaluation</h2>
+      <p>Three boolean conditions are evaluated independently and displayed in the checklist table:</p>
+      <div class="def-list">
+        <div class="def-row"><div class="def-term">Liq Sweep</div><div class="def-desc">Did the sweep candle's wick actually break the structural level? (high[sweep_bar] > sw_high for sells, low[sweep_bar] &lt; sw_low for buys)</div></div>
+        <div class="def-row"><div class="def-term">Close Back</div><div class="def-desc">Did the confirmation candle close back inside the swept range? (close &lt; sw_high AND close &gt; sw_low for sells, vice versa for buys)</div></div>
+        <div class="def-row"><div class="def-term">Clear Target</div><div class="def-desc">Is there a meaningful HTF liquidity level (Daily/4H/1H) at least 0.8× ATR away in the trade direction?</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- GLOSSARY -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-glossary" class="section">
+      <div class="page-eyebrow">Glossary</div>
+      <div class="page-title">Terms & Definitions</div>
+      <div class="page-subtitle">Trading concepts and internal terminology used throughout this indicator and documentation.</div>
+
+      <h2>Trading Concepts</h2>
+      <div class="def-list">
+        <div class="def-row"><div class="def-term">Liquidity</div><div class="def-desc">Clusters of stop orders sitting above swing highs (buy-stops) or below swing lows (sell-stops). Institutional players use these pools to fill large orders.</div></div>
+        <div class="def-row"><div class="def-term">Liquidity Sweep</div><div class="def-desc">When price moves through a key level, triggers the stop orders (collects the liquidity), then reverses. Often appears as a long wick candle.</div></div>
+        <div class="def-row"><div class="def-term">Fakeout</div><div class="def-desc">A failed breakout. Price breaks a level suggesting a move in one direction, then rapidly reverses. The sweep is the "fake" move; the close-back is the signal.</div></div>
+        <div class="def-row"><div class="def-term">HTF Bias</div><div class="def-desc">Higher Timeframe Bias. The directional context from daily and 4-hour charts. Trading in the direction of HTF bias significantly improves win rate.</div></div>
+        <div class="def-row"><div class="def-term">Overextension</div><div class="def-desc">When price has moved a significant distance in one direction (measured by ATR multiples) without a pullback. Overextended moves are more likely to reverse sharply.</div></div>
+        <div class="def-row"><div class="def-term">Morning Star</div><div class="def-desc">3-candle bullish reversal: large bearish candle → small doji/spinning top (sweep low) → large bullish confirmation. The sweep version requires the doji wick to break a structural low.</div></div>
+        <div class="def-row"><div class="def-term">Evening Star</div><div class="def-desc">3-candle bearish reversal: large bullish candle → small doji (sweep high) → large bearish confirmation. Sweep version requires wick above structural high.</div></div>
+        <div class="def-row"><div class="def-term">Sell-side Liq</div><div class="def-desc">Buy-stop orders sitting above swing highs. Called "sell-side" because institutional sellers use these levels to sell into the buy orders.</div></div>
+        <div class="def-row"><div class="def-term">Buy-side Liq</div><div class="def-desc">Sell-stop orders sitting below swing lows. Institutions buy into these sell orders.</div></div>
+        <div class="def-row"><div class="def-term">R:R</div><div class="def-desc">Risk-to-Reward ratio. A 1:2R trade risks 1 unit to gain 2. The indicator shows live R:R for each TP level.</div></div>
+      </div>
+
+      <h2>Internal Terminology</h2>
+      <div class="def-list">
+        <div class="def-row"><div class="def-term">sweep_bar</div><div class="def-desc">The bar offset of the actual sweep candle (the wick candle). Equal to confirm_bars.</div></div>
+        <div class="def-row"><div class="def-term">str_start</div><div class="def-desc">The bar offset where the swing structure lookback begins. Equal to confirm_bars + 1.</div></div>
+        <div class="def-row"><div class="def-term">sw_high / sw_low</div><div class="def-desc">The structural swing high or low that price needs to breach for a valid sweep.</div></div>
+        <div class="def-row"><div class="def-term">sw_doji</div><div class="def-desc">Boolean. True when the sweep candle has a body ≤ doji_pct of its full range.</div></div>
+        <div class="def-row"><div class="def-term">bias_bull / bias_bear</div><div class="def-desc">Final bias booleans after base bias and sweep override are both applied.</div></div>
+        <div class="def-row"><div class="def-term">is_overridden</div><div class="def-desc">True when a sweep override is currently active (any TF sweep state ≠ 0).</div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- CHANGELOG -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-changelog" class="section">
+      <div class="page-eyebrow">Changelog</div>
+      <div class="page-title">Version History</div>
+      <div class="page-subtitle">Every change, fix, and feature addition across all versions.</div>
+
+      <!-- v5 -->
+      <div class="changelog-entry">
+        <div class="changelog-dot latest"></div>
+        <div class="changelog-header">
+          <span class="changelog-version">v5.0</span>
+          <span class="changelog-date">May 2026</span>
+          <span class="badge badge-major">Major</span>
+          <span class="badge badge-fix">Bug Fix</span>
+        </div>
+        <ul class="change-list">
+          <li><span class="tag tag-fix">FIX</span>Bias no longer stays bearish after a 4H low sweep. <code>h4_sweep</code> state variable now flips <code>bias_bull=true</code> immediately on close-back above 4H low.</li>
+          <li><span class="tag tag-fix">FIX</span>Morning star (buy) signals were not firing after 4H low sweeps. Root cause: sweep override only watched Daily levels in v4. Now watches Daily, 4H, and optionally 1H.</li>
+          <li><span class="tag tag-viz">VIZ</span>Replaced confusing sweep box + arrow label with full trade ghost: Entry line (yellow), SL line + zone (red), TP1/TP2/TP3 lines + zones (cyan), live R:R labels on each TP.</li>
+          <li><span class="tag tag-logic">LOGIC</span>Sweep override priority system: Daily &gt; 4H &gt; 1H &gt; base bias. Only the highest-priority active sweep determines the bias.</li>
+          <li><span class="tag tag-fix">FIX</span>Sweep state now resets on new candle of the correct TF (<code>ta.change(time("240"))</code> for 4H, etc). Previously only reset on new daily bar.</li>
+          <li><span class="tag tag-viz">VIZ</span>Bias table updated with new "Sweep" row showing which sweep is active (e.g. "⚡ 4H-Low Swept") and "OVR" suffix on final bias when overridden.</li>
+          <li><span class="tag tag-viz">VIZ</span>Small ⚡ emoji marker on sweep candle replaces the full box — minimal, non-intrusive, clearly marks the sweep point without dominating the chart.</li>
+          <li><span class="tag tag-feat">FEAT</span>Checklist table now includes an "Override reason" row showing the source of the current bias override.</li>
+          <li><span class="tag tag-feat">FEAT</span>New alerts: "BUY after 4H Low Sweep" and "SELL after 4H High Sweep" for targeted notifications.</li>
+          <li><span class="tag tag-logic">LOGIC</span>TP distances now calculated as multiples of the SL distance (risk-based) rather than fixed ATR multiples. Ensures R:R ratios are consistent regardless of market volatility.</li>
+        </ul>
+      </div>
+
+      <!-- v4 -->
+      <div class="changelog-entry">
+        <div class="changelog-dot fix"></div>
+        <div class="changelog-header">
+          <span class="changelog-version">v4.0</span>
+          <span class="changelog-date">May 2026</span>
+          <span class="badge badge-fix">Bug Fix</span>
+          <span class="badge badge-new">New Features</span>
+        </div>
+        <ul class="change-list">
+          <li><span class="tag tag-feat">FEAT</span>Added <code>smart_override</code> — first attempt at bias flip after Daily sweeps. Only watched Daily levels (4H fix came in v5).</li>
+          <li><span class="tag tag-feat">FEAT</span>Introduced "Aggressive V-Wick" mode for detecting sharp single-candle sweeps without requiring the doji-body condition.</li>
+          <li><span class="tag tag-fix">FIX</span>Switched HTF data to <code>barmerge.lookahead_off</code> to prevent future bar data leakage and ensure indicator is non-repainting.</li>
+          <li><span class="tag tag-viz">VIZ</span>Liquidity lines rebuilt using persistent <code>map&lt;string, line&gt;</code> objects — lines now update correctly without duplication.</li>
+          <li><span class="tag tag-logic">LOGIC</span>Added proximity filter: sweep candle must be near (<code>≥</code>) a known HTF level (Daily/4H/1H) to qualify.</li>
+          <li><span class="tag tag-fix">FIX</span>Resolved "Evening star firing in wrong direction" bug from v3 — was triggering during bull bias due to inverted condition check.</li>
+        </ul>
+      </div>
+
+      <!-- v3 -->
+      <div class="changelog-entry">
+        <div class="changelog-dot"></div>
+        <div class="changelog-header">
+          <span class="changelog-version">v3.0</span>
+          <span class="changelog-date">May 2026</span>
+          <span class="badge badge-major">Rewrite</span>
+        </div>
+        <ul class="change-list">
+          <li><span class="tag tag-logic">LOGIC</span>Complete rewrite of signal detection. Abandoned textbook 3-candle pattern in favour of structural sweep + close-back logic.</li>
+          <li><span class="tag tag-fix">FIX</span>Fixed morning star never firing — v2 logic required candle[-2] to be large bullish, which was too rigid.</li>
+          <li><span class="tag tag-fix">FIX</span>Evening star was firing randomly in v2. New logic requires wick to specifically breach a prior swing high, not just be a doji after any up move.</li>
+          <li><span class="tag tag-viz">VIZ</span>Liquidity lines redrawn with higher opacity (width 2, minimal transparency) — v2 lines were nearly invisible.</li>
+          <li><span class="tag tag-feat">FEAT</span>Bias engine revamped: daily closed position in range (upper/lower 60%) replaces simple bull/bear candle check.</li>
+          <li><span class="tag tag-doc">DOC</span>Added inline code comments explaining each layer of the logic.</li>
+        </ul>
+      </div>
+
+      <!-- v2 -->
+      <div class="changelog-entry">
+        <div class="changelog-dot"></div>
+        <div class="changelog-header">
+          <span class="changelog-version">v2.0</span>
+          <span class="changelog-date">May 2026</span>
+          <span class="badge badge-new">New</span>
+        </div>
+        <ul class="change-list">
+          <li><span class="tag tag-feat">FEAT</span>Added Morning Star / Evening Star 3-candle pattern detection.</li>
+          <li><span class="tag tag-feat">FEAT</span>Added overextension filter using ATR.</li>
+          <li><span class="tag tag-feat">FEAT</span>Added checklist table (bottom-right): Sweep / Close Back / Clear Target.</li>
+          <li><span class="tag tag-feat">FEAT</span>Added bias dashboard (top-right): Daily / 4H / Overall.</li>
+          <li><span class="tag tag-feat">FEAT</span>Smart liquidity lines (bias-aware): sell-side in orange, buy-side in cyan, daily close in purple.</li>
+          <li><span class="tag tag-viz">VIZ</span>Star pattern highlights sweep candle with coloured box.</li>
+        </ul>
+      </div>
+
+      <!-- v1 -->
+      <div class="changelog-entry">
+        <div class="changelog-dot"></div>
+        <div class="changelog-header">
+          <span class="changelog-version">v1.0</span>
+          <span class="changelog-date">May 2026</span>
+          <span class="badge badge-new">Initial Release</span>
+        </div>
+        <ul class="change-list">
+          <li><span class="tag tag-feat">FEAT</span>Initial indicator: body ratio sweep detection, basic HTF bias (daily + 4H), simple dotted liquidity lines.</li>
+          <li><span class="tag tag-feat">FEAT</span>Sell-side targets (Daily/4H/1H highs) when bearish, buy-side targets (lows) when bullish.</li>
+          <li><span class="tag tag-viz">VIZ</span>Arrow labels for signals, swing high/low reference circles.</li>
+          <li><span class="tag tag-feat">FEAT</span>Alert conditions for buy/sell signals.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- KNOWN ISSUES -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-issues" class="section">
+      <div class="page-eyebrow">Known Issues</div>
+      <div class="page-title">Bugs & Limitations</div>
+      <div class="page-subtitle">Tracked issues, their status, and workarounds where available.</div>
+
+      <h2>Open Issues</h2>
+
+      <div class="issue-card">
+        <div class="issue-status st-progress">In Progress</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-007 — Too many signals during sideways/choppy price action</div>
+          <div class="issue-desc">When price is ranging between two levels, multiple fakeout signals fire in both directions as price oscillates. The overextension filter helps but doesn't fully solve it on very tight ranges.</div>
+          <div class="issue-meta">Priority: High · v5.0 · Workaround: Increase <code>overext_atr</code> to 1.8–2.0 in ranging markets.</div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-status st-open">Open</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-009 — Sweep override state doesn't reset if chart is loaded mid-session</div>
+          <div class="issue-desc">If TradingView loads the chart mid-way through a 4H candle where a sweep occurred, the h4_sweep var may initialise to 0 and miss the active override. This is a Pine Script limitation with var initialisation on historical bars.</div>
+          <div class="issue-meta">Priority: Medium · v5.0 · Workaround: Refresh chart to reinitialise state variables.</div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-status st-open">Open</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-010 — TP zones overlap when SL is very small (low ATR markets)</div>
+          <div class="issue-desc">In low-volatility periods, ATR is small and TP1/TP2 zones visually overlap with the entry zone, making the trade visual hard to read.</div>
+          <div class="issue-meta">Priority: Low · v5.0 · Proposed fix: Add minimum TP distance floor (e.g. 3× symbol mintick).</div>
+        </div>
+      </div>
+
+      <h2>Resolved Issues</h2>
+
+      <div class="issue-card">
+        <div class="issue-status st-resolved">Resolved v5</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-006 — Bias stays BEAR after 4H low sweep, no BUY signals fire</div>
+          <div class="issue-desc">Core bug from v4. After price swept a 4H low and reversed bullishly, the indicator kept showing sell signals because h4_sweep was never tracked. Fixed by adding independent h4_sweep state in v5.</div>
+          <div class="issue-meta">Fixed in v5.0</div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-status st-resolved">Resolved v3</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-003 — Evening star fires in wrong direction / Morning star never fires</div>
+          <div class="issue-desc">v2 used textbook 3-candle pattern which was too rigid. Completely rewritten in v3 with structural sweep + close-back logic.</div>
+          <div class="issue-meta">Fixed in v3.0</div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-status st-resolved">Resolved v3</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-002 — Liquidity lines barely visible (low opacity, thin lines)</div>
+          <div class="issue-desc">v2 drew lines with high transparency. Fixed in v3 with width=2 and low transparency values.</div>
+          <div class="issue-meta">Fixed in v3.0</div>
+        </div>
+      </div>
+
+      <div class="issue-card">
+        <div class="issue-status st-wont">Won't Fix</div>
+        <div class="issue-body">
+          <div class="issue-title">ISS-005 — Historical signals repaint due to HTF data on live bar</div>
+          <div class="issue-desc">Using live HTF data (<code>lookahead_on</code> with current bar) would cause repaint. Decision: use <code>lookahead_off</code> with [1] offsets permanently. Signals may fire 1 bar later but are never repainting.</div>
+          <div class="issue-meta">Won't Fix — by design · Non-repainting is a hard requirement.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TESTING -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-testing" class="section">
+      <div class="page-eyebrow">Test Log</div>
+      <div class="page-title">Manual Testing Record</div>
+      <div class="page-subtitle">Sessions where the indicator was tested against real chart scenarios.</div>
+
+      <div class="callout info">
+        All testing is manual (visual inspection on live/historical charts). Add sessions below as you test. Record: asset, timeframe, scenario, result, and any observations.
+      </div>
+
+      <h2>Test Sessions</h2>
+
+      <div class="test-row">
+        <div>
+          <div class="t-name">XAUUSD — 4H Low Sweep → BUY signal check</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">v5 — Verified 4H low sweep flips bias to BULL and buy signal fires on 5m close-back. Previously missing in v4.</div>
+        </div>
+        <div class="t-tf">XAUUSD · 5m</div>
+        <div class="t-date">May 2026</div>
+        <div class="result-pass">✓ PASS</div>
+      </div>
+      <div class="test-row">
+        <div>
+          <div class="t-name">XAUUSD — Sell signals after 4H low sweep (should NOT fire)</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Checked that SELL signals are suppressed once h4_sweep = -1 (bullish override). No erroneous sells observed in test window.</div>
+        </div>
+        <div class="t-tf">XAUUSD · 15m</div>
+        <div class="t-date">May 2026</div>
+        <div class="result-pass">✓ PASS</div>
+      </div>
+      <div class="test-row">
+        <div>
+          <div class="t-name">XAUUSD — Evening star + SELL in trending bear market</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Daily bearish. Multiple sell fakeouts marked. 2 of 3 hit TP1 in backlook. 1 false positive during consolidation period.</div>
+        </div>
+        <div class="t-tf">XAUUSD · 15m</div>
+        <div class="t-date">May 2026</div>
+        <div class="result-part">~ PARTIAL</div>
+      </div>
+      <div class="test-row">
+        <div>
+          <div class="t-name">Checklist table — all 3 pass = high prob result check</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Monitoring whether "HIGH PROB" grade (all 3 ✅) correlates with better outcomes vs MODERATE. Ongoing.</div>
+        </div>
+        <div class="t-tf">Multiple · 5m</div>
+        <div class="t-date">Ongoing</div>
+        <div class="result-part">~ ONGOING</div>
+      </div>
+      <div class="test-row">
+        <div>
+          <div class="t-name">v3 — Morning star logic (was never firing)</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Confirmed morning star was completely broken in v2. v3 rewrite fixed this — bullish fakeouts now fire correctly.</div>
+        </div>
+        <div class="t-tf">XAUUSD · 5m</div>
+        <div class="t-date">May 2026</div>
+        <div class="result-pass">✓ FIXED</div>
+      </div>
+      <div class="test-row">
+        <div>
+          <div class="t-name">v2 — Evening star firing in wrong places</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Documented: evening star firing during bull bias on random doji candles. Confirmed bug in v2. Resolved in v3.</div>
+        </div>
+        <div class="t-tf">XAUUSD · 15m</div>
+        <div class="t-date">May 2026</div>
+        <div class="result-fail">✗ FAIL → FIXED v3</div>
+      </div>
+
+      <h2>Test Template</h2>
+      <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:2">
+        <div style="color:var(--accent2)">// Copy this block for each new test session</div>
+        <div>Date       : [date]</div>
+        <div>Version    : [vX.X]</div>
+        <div>Asset      : [symbol]</div>
+        <div>Timeframe  : [chart TF]</div>
+        <div>Scenario   : [what you're testing]</div>
+        <div>Setup      : [bias / sweep level / pattern observed]</div>
+        <div>Result     : [PASS / FAIL / PARTIAL]</div>
+        <div>Outcome    : [hit TP1 / hit SL / no follow-through]</div>
+        <div>Notes      : [anything unexpected, edge cases, parameter changes]</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- ROADMAP -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-roadmap" class="section">
+      <div class="page-eyebrow">Roadmap</div>
+      <div class="page-title">What's Coming</div>
+      <div class="page-subtitle">Planned features, improvements, and long-term ideas.</div>
+
+      <div class="roadmap-grid">
+        <div class="roadmap-col col-now">
+          <h3>Now · v5.x</h3>
+          <div class="roadmap-item">
+            <div class="ri-label">Bug Fix</div>
+            Fix TP zone overlap in low-ATR markets (ISS-010)
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Improvement</div>
+            Chop filter — suppress signals when price is inside a tight ATR range for N bars
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Testing</div>
+            Extended backlook testing on EURUSD and NAS100 to verify parameter defaults
+          </div>
+        </div>
+        <div class="roadmap-col col-next">
+          <h3>Next · v6.0</h3>
+          <div class="roadmap-item">
+            <div class="ri-label">Feature</div>
+            Multi-timeframe sweep dashboard — show pending sweeps across all TFs on one panel
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Feature</div>
+            Session filter — only fire signals during London/NY overlap. Suppress Asian session signals.
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Feature</div>
+            Partial TP automation suggestion — label "Move SL to BE" when TP1 is hit
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Improvement</div>
+            Replace ATR-based TP with nearest HTF level as TP1 target
+          </div>
+        </div>
+        <div class="roadmap-col col-later">
+          <h3>Later · v7+</h3>
+          <div class="roadmap-item">
+            <div class="ri-label">Research</div>
+            Win-rate tracking table — auto-log signals and outcomes to a persistent score
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Research</div>
+            Volume profile integration — confirm sweeps with volume spike detection
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Feature</div>
+            Alert webhook support — structured JSON payload for automation / Discord bot
+          </div>
+          <div class="roadmap-item">
+            <div class="ri-label">Idea</div>
+            Separate entry-timing companion script (15m → 5m drill-down visual)
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <strong>Versioning policy:</strong> Minor versions (v5.1, v5.2) = bug fixes and small improvements. Major versions (v6.0) = new features or architectural changes. Breaking changes to default parameters require a major version bump.
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- USAGE GUIDE -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-usage" class="section">
+      <div class="page-eyebrow">Usage Guide</div>
+      <div class="page-title">How to Use Fakeout Pro</div>
+      <div class="page-subtitle">Step-by-step workflow for identifying and executing fakeout setups.</div>
+
+      <h2>Step 1 — Check the Bias Table</h2>
+      <p>Before looking at any signals, check the top-right bias table. You need to know: <strong>what direction is the indicator biased?</strong> If it shows <code>⬇ BEAR</code>, only trade sell signals. If it shows <code>⬆ BULL</code>, only trade buy signals. If it shows <code>⚡ OVR</code>, a major level was just swept — the bias has flipped.</p>
+
+      <h2>Step 2 — Identify the Liquidity Lines</h2>
+      <p>The dotted lines show key levels price is likely to target. In a bear bias, orange lines above price = sell-side liquidity (targets for price to sweep before reversing lower). In a bull bias, cyan lines below = buy-side liquidity.</p>
+
+      <div class="callout success">
+        <strong>Setup condition:</strong> A signal is most valuable when it fires AT one of the liquidity lines — meaning price swept the line, closed back, and the indicator fired. This is the classic "liquidity sweep → fakeout entry" sequence.
+      </div>
+
+      <h2>Step 3 — Wait for the Signal</h2>
+      <p>When a <strong>▲ BUY FAKEOUT</strong> or <strong>▼ SELL FAKEOUT</strong> appears, the indicator draws the full trade visual: entry line, SL zone, and TP levels. The sweep candle is marked with a small ⚡.</p>
+
+      <h2>Step 4 — Check the Checklist</h2>
+      <p>Bottom-right table shows 3 conditions. <strong>Only take trades where all 3 are ✅</strong> (HIGH PROB). If 1–2 pass, treat as a lower-confidence setup and reduce size. If none pass, skip the trade.</p>
+
+      <h2>Step 5 — Execute</h2>
+      <div class="def-list">
+        <div class="def-row"><div class="def-term">Entry</div><div class="def-desc">At the yellow entry line (signal candle close). Can also enter on the next candle open for a safer fill.</div></div>
+        <div class="def-row"><div class="def-term">Stop Loss</div><div class="def-desc">At the red SL line. This is placed beyond the sweep wick extreme with a small buffer.</div></div>
+        <div class="def-row"><div class="def-term">TP1</div><div class="def-desc">Take partial profit (50%) at TP1. Move SL to breakeven.</div></div>
+        <div class="def-row"><div class="def-term">TP2</div><div class="def-desc">Take remaining position at TP2, or hold for TP3 if momentum is strong.</div></div>
+      </div>
+
+      <h2>Recommended Settings by Asset</h2>
+      <table class="params-table">
+        <thead><tr><th>Asset</th><th>Chart TF</th><th>swing_len</th><th>overext_atr</th><th>doji_pct</th></tr></thead>
+        <tbody>
+          <tr><td>XAUUSD (Gold)</td><td>5m / 15m</td><td class="param-default">8</td><td class="param-default">1.2</td><td class="param-default">0.40</td></tr>
+          <tr><td>NAS100 / SPX</td><td>5m / 15m</td><td class="param-default">10</td><td class="param-default">1.5</td><td class="param-default">0.35</td></tr>
+          <tr><td>EURUSD / FX</td><td>15m / 1H</td><td class="param-default">12</td><td class="param-default">1.0</td><td class="param-default">0.45</td></tr>
+          <tr><td>BTC/ETH Crypto</td><td>5m / 15m</td><td class="param-default">8</td><td class="param-default">2.0</td><td class="param-default">0.40</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- DESIGN DECISIONS -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-decisions" class="section">
+      <div class="page-eyebrow">Design Decisions</div>
+      <div class="page-title">Why We Built It This Way</div>
+      <div class="page-subtitle">Architectural and design decisions with rationale. Helps future development stay consistent with original intent.</div>
+
+      <h2>Decision Log</h2>
+
+      <div class="card">
+        <h3>DD-001 · Use lookahead_off for all HTF data</h3>
+        <p><strong>Decision:</strong> All <code>request.security()</code> calls use <code>barmerge.lookahead_off</code> and reference <code>[1]</code> offsets (previous bar).</p>
+        <p><strong>Rationale:</strong> <code>lookahead_on</code> with current bar data causes the indicator to repaint — signals appear and disappear as the live bar develops. This destroys trust and backtesting validity. Non-repainting is a non-negotiable requirement.</p>
+        <p><strong>Trade-off:</strong> Signals fire 1 bar later than they theoretically could. Accepted — accuracy beats speed.</p>
+      </div>
+
+      <div class="card">
+        <h3>DD-002 · Bias override priority: Daily > 4H > 1H</h3>
+        <p><strong>Decision:</strong> When multiple sweep states are active, Daily takes priority over 4H over 1H.</p>
+        <p><strong>Rationale:</strong> A Daily sweep is a larger, more significant liquidity event than a 4H sweep. If both are active, the Daily context should dominate. 1H sweeps are the least reliable and are off by default.</p>
+      </div>
+
+      <div class="card">
+        <h3>DD-003 · Sweep state resets on new TF candle, not on signal fire</h3>
+        <p><strong>Decision:</strong> <code>h4_sweep</code> resets to 0 when a new 4H candle opens, not when a fakeout signal fires.</p>
+        <p><strong>Rationale:</strong> The sweep context is relevant for the entire duration of the current 4H candle — multiple LTF fakeout entries may be valid within that window. Resetting on signal would suppress valid second entries.</p>
+      </div>
+
+      <div class="card">
+        <h3>DD-004 · TP calculated as multiples of SL distance, not ATR</h3>
+        <p><strong>Decision:</strong> TP distances are <code>risk × multiplier</code> where risk = entry - SL. Not <code>ATR × multiplier</code>.</p>
+        <p><strong>Rationale:</strong> R:R ratios should be consistent regardless of ATR. If ATR is used for both SL and TP, a larger ATR produces both a wider SL and further TP — which maintains R:R. But using ATR directly for TP when SL is set to wick extreme creates inconsistent R:R. Risk-based TP is cleaner.</p>
+      </div>
+
+      <div class="card">
+        <h3>DD-005 · Swing structure excludes the sweep candle from lookback</h3>
+        <p><strong>Decision:</strong> <code>sw_high = ta.highest(high, swing_len)[str_start]</code> where <code>str_start = confirm_bars + 1</code>. The sweep candle itself is not included in the structural high/low calculation.</p>
+        <p><strong>Rationale:</strong> Including the sweep candle in the lookback would mean it could set its own high as the swing level — defeating the purpose. The structural level must predate the sweep candle.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- DEV NOTES -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div id="sec-notes" class="section">
+      <div class="page-eyebrow">Developer Notes</div>
+      <div class="page-title">Working Notes</div>
+      <div class="page-subtitle">Observations, experiments, and ideas captured during development sessions.</div>
+
+      <h2>Session Notes</h2>
+
+      <div class="card">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px">May 2026 — v5 Development</div>
+        <p>The core insight for v5 was that the sweep override in v4 only ever watched Daily levels. The 4H low sweep scenario (which is the most common intraday reversal trigger, especially on XAUUSD) was completely ignored. The fix was straightforward once identified — just three more <code>var int h4_sweep</code> state checks mirroring the daily logic.</p>
+        <p>The trade visualisation overhaul was also important. The old "sweep box + arrow" was genuinely confusing — it highlighted the wrong candle, the box looked like a bearish body, and there was no indication of where to enter or exit. The new entry/SL/TP ghost layout communicates the entire trade plan at a glance.</p>
+        <p>One Pine v6 quirk: the <code>f_upsert_line()</code> function returning a tuple <code>[line, label]</code> had to be carefully typed. Type inference sometimes fails on tuple returns from functions called conditionally — watch out for this in future refactors.</p>
+      </div>
+
+      <div class="card">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--orange);margin-bottom:10px">May 2026 — v3 Session Notes</div>
+        <p>Scrapped the textbook morning/evening star pattern entirely. The problem was that a "textbook" evening star requires candle[-2] to be a large bullish body — but in real setups, the move before the sweep is often multiple candles, not one single large candle. The indicator was completely missing valid setups because of this rigid check.</p>
+        <p>Replacing with "wick broke structure + closed back + directional confirm" immediately caught the setups that were being missed. The overextension check replaces the "large body" requirement — if the move prior to the sweep was significant (1.2× ATR or more), we don't care about the shape of any single candle in that move.</p>
+      </div>
+
+      <h2>Observations from Live Testing</h2>
+      <div class="change-list">
+        <li><span class="tag tag-doc">OBS</span>Gold (XAUUSD) on 5m is the most reliable asset for this strategy. Daily sweeps of 4H lows happen frequently and the reversal is often sharp enough to hit TP1 within 2–4 hours.</li>
+        <li><span class="tag tag-doc">OBS</span>The "HIGH PROB" grade (all 3 checklist items passing) appears to correlate with cleaner entries. MODERATE setups (2/3 pass) have more follow-through variability.</li>
+        <li><span class="tag tag-doc">OBS</span>Overextension filter (overext_atr) is the most impactful parameter for reducing false signals in chop. 1.5 significantly cleaner than 1.0 in ranging markets.</li>
+        <li><span class="tag tag-doc">OBS</span>1H sweep override is off by default for good reason — it fires too frequently on 5m charts and creates bias confusion.</li>
+        <li><span class="tag tag-doc">OBS</span>Signals during the Asian session (no London/NY overlap) tend to have lower follow-through. Session filter is a priority for v6.</li>
+      </div>
+
+      <h2>Pine Script v6 Notes</h2>
+      <div class="callout warn">
+        <strong>Known Pine v6 limitation:</strong> <code>var</code> variables initialise to their declared value only on the first bar. If the chart loads mid-session, sweep state variables start at 0 and may miss an active sweep. This cannot be fully fixed without persistent storage, which Pine does not support.
+      </div>
+      <div class="callout info">
+        <strong>max_lines_count / max_labels_count:</strong> Set to 500/300 respectively. Each signal draws ~8 lines and ~5 labels. At 500 lines, the chart can hold roughly 60 historical trade visuals before oldest ones are deleted automatically by TradingView.
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  function show(id, el) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    // Show selected
+    document.getElementById('sec-' + id).classList.add('active');
+    el.classList.add('active');
+    // Update breadcrumb
+    document.getElementById('crumb').textContent = el.querySelector('span:last-child').textContent.trim();
+    // Scroll to top
+    document.querySelector('.main').scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
